@@ -44,8 +44,11 @@ class FileTransferService(rpyc.Service):
 
     def exposed_cancel_interest(self, filename, client_ref):
         if filename in interesses:
-            self._remove_interest(filename, client_ref)
-            return f"Interesse cancelado para o arquivo {filename}."
+            removed = self._remove_interest(filename, client_ref)
+            if removed:
+                return f"Interesse cancelado para o arquivo {filename}."
+            else:
+                return f"Não foi possível cancelar o interesse para o arquivo {filename}."
         return f"Não há interesse registrado para o arquivo {filename}."
 
     def _check_and_notify(self, filename):
@@ -60,12 +63,25 @@ class FileTransferService(rpyc.Service):
 
     def _remove_interest(self, filename, client_ref):
         if filename in interesses:
+            # Filtra interesses que não são do cliente atual
+            original_length = len(interesses[filename])
             interesses[filename] = [
                 interest for interest in interesses[filename]
-                if interest["client_ref"] != client_ref
+                if not self._is_same_client(interest["client_ref"], client_ref)
             ]
-            if not interesses[filename]:
-                del interesses[filename]
+            # Verifica se algo foi removido
+            if len(interesses[filename]) < original_length:
+                # Remove o arquivo do dicionário se não houver mais interesses
+                if not interesses[filename]:
+                    del interesses[filename]
+                return True
+        return False
+
+    def _is_same_client(self, ref1, ref2):
+        try:
+            return ref1 == ref2
+        except EOFError:
+            return False
 
 if __name__ == "__main__":
     if not os.path.exists("arquivos"):

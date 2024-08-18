@@ -117,6 +117,9 @@ def cancel_interest(filename):
     except Exception as e:
         messagebox.showerror("Erro", f"Falha ao cancelar interesse: {e}")
 
+
+
+
 def update_interest_window():
     # Filtra e exibe apenas os arquivos de interesse na janela de arquivos com interesse
     files = [file for file in os.listdir("arquivos") if file in local_interests]
@@ -133,6 +136,8 @@ def update_interest_window():
         no_files_label.pack()
 
 
+
+
 def open_new_window_file_interest():
     global interest_window
     interest_window = ctk.CTkToplevel()
@@ -141,29 +146,20 @@ def open_new_window_file_interest():
     button_for_download_archive = ctk.CTkButton(master=interest_window, text="Marcar Desinteresse", width=75, command=input_get_name_mark_disinterest)
     button_for_download_archive.place(relx=0.5, rely=0.5, anchor=CENTER)
 
-    update_interest_window()  # Inicializa a janela com os arquivos de interesse
-
-
-
-def open_new_window_file_interest():
-    new_window_custom = ctk.CTkToplevel()
-    new_window_custom.title("Arquivos com interesse")
-    new_window_custom.geometry("550x300")
-    button_for_download_archive = ctk.CTkButton(master=new_window_custom, text="Marcar Desinteresse", width=75, command=input_get_name_mark_disinterest)
-    button_for_download_archive.place(relx=0.5, rely=0.5, anchor=CENTER)
-
     try:
         # Filtra e exibe apenas os arquivos de interesse
         files = [file for file in os.listdir("arquivos") if file in local_interests]
         if files:
             for idx, file in enumerate(files):
-                file_label = ctk.CTkLabel(new_window_custom, text=file)
+                file_label = ctk.CTkLabel(interest_window, text=file)
                 file_label.pack(anchor='w')
         else:
-            no_files_label = ctk.CTkLabel(new_window_custom, text="Nenhum arquivo marcado como interesse.")
+            no_files_label = ctk.CTkLabel(interest_window, text="Nenhum arquivo marcado como interesse.")
             no_files_label.pack()
     except Exception as e:
         messagebox.showerror("Erro", f"Falha ao listar arquivos de interesse: {e}")
+      # Inicializa a janela com os arquivos de interesse
+
 
 conn = rpyc.connect("localhost", 18861, service=ClientService)
 
