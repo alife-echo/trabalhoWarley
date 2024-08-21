@@ -1,0 +1,12 @@
+instalar pyro4
+
+instalar tkinter
+
+instalar customtkinter
+
+Prencher os inputs com nome.extensão
+
+Executar server --> python ./Server.py
+
+Executar client --> python ./Client.py 
+

@@ -1,8 +1,8 @@
 import rpyc
 import os
 import threading
-
-# Dicionário para armazenar interesses de clientes em arquivos
+from tkinter import messagebox
+import numpy as np
 interesses = {}
 
 class FileTransferService(rpyc.Service):
@@ -50,28 +50,32 @@ class FileTransferService(rpyc.Service):
             else:
                 return f"Não foi possível cancelar o interesse para o arquivo {filename}."
         return f"Não há interesse registrado para o arquivo {filename}."
-
+    def exposed_send_notify(self,filename):
+        return f"O arquivo '{filename}' está agora disponível"
+    
     def _check_and_notify(self, filename):
         if filename in interesses:
             for interest in interesses[filename]:
                 try:
-                    interest['client_ref'].notify_file_available(filename)
+                    client_ref = interest['client_ref']
+                    print("Atributos e métodos disponíveis:", dir(client_ref))              
+                    self.exposed_send_notify(filename)
+                 
+                        
                 except Exception as e:
                     print(f"Falha ao notificar cliente: {e}")
 
             del interesses[filename]
 
+
     def _remove_interest(self, filename, client_ref):
         if filename in interesses:
-            # Filtra interesses que não são do cliente atual
             original_length = len(interesses[filename])
             interesses[filename] = [
                 interest for interest in interesses[filename]
                 if not self._is_same_client(interest["client_ref"], client_ref)
             ]
-            # Verifica se algo foi removido
             if len(interesses[filename]) < original_length:
-                # Remove o arquivo do dicionário se não houver mais interesses
                 if not interesses[filename]:
                     del interesses[filename]
                 return True
@@ -86,7 +90,8 @@ class FileTransferService(rpyc.Service):
 if __name__ == "__main__":
     if not os.path.exists("arquivos"):
         os.makedirs("arquivos")
-
+    print(os.listdir("arquivos"))
+    print(interesses)
     from rpyc.utils.server import ThreadedServer
     server = ThreadedServer(FileTransferService, port=18861)
     server.start()

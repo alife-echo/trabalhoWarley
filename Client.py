@@ -5,9 +5,8 @@ from tkinter import filedialog
 import customtkinter as ctk
 from tkinter import messagebox
 
-# Lista local para armazenar os arquivos de interesse
-local_interests = []
 
+local_interests = []
 class ClientService(rpyc.Service):
     def on_connect(self, conn):
         print("Conectado ao servidor")
@@ -15,8 +14,9 @@ class ClientService(rpyc.Service):
     def on_disconnect(self, conn):
         print("Desconectado do servidor")
 
-    def exposed_notify_file_available(self, filename):
-        messagebox.showinfo("Notificação", f"O arquivo '{filename}' está agora disponível para download!")
+  
+def notify_file_available(filename):
+        messagebox.showinfo("Notificação", conn.root.send_notify(filename))
 
 def input_register_interest():
     textDialog = ctk.CTkInputDialog(text="Digite o nome do arquivo de interesse", title="Marcar Interesse")
@@ -28,11 +28,11 @@ def register_interest(filename):
     try:
         duration = 60 * 60  # Duração do interesse (em segundos)
         conn.root.register_interest(filename, conn, duration)
-        # Adicionar o arquivo à lista de interesses locais
         local_interests.append(filename)
         messagebox.showinfo("Sucesso", f"Interesse no arquivo '{filename}' registrado com sucesso!")
     except Exception as e:
         messagebox.showerror("Erro", f"Falha ao registrar interesse: {e}")
+
 
 def setPreviewFile(filepath):
     path_entry.delete(0, END)
@@ -52,7 +52,9 @@ def saveFile():
             data = file.read()
         conn.root.upload_files(os.path.basename(filename), data)
         setPreviewFile("")
+
         messagebox.showinfo("Sucesso", "Upload realizado com sucesso!")
+        
     except Exception as e:
         messagebox.showerror("Erro", f"Falha ao fazer upload: {e}")
 
@@ -94,6 +96,7 @@ def open_new_window_show_files():
     except Exception as e:
         messagebox.showerror("Erro", f"Falha ao listar arquivos: {e}")
 
+
 def input_get_name_mark_disinterest():
     textDialog = ctk.CTkInputDialog(text="Nome Arquivo Desmarcar Interesse", title="Desmarcar")
     filename = textDialog.get_input()
@@ -102,14 +105,10 @@ def input_get_name_mark_disinterest():
 
 def cancel_interest(filename):
     try:
-        # Enviar solicitação de cancelamento de interesse para o servidor
-        response = conn.root.cancel_interest(filename, conn)
-        
+        response = conn.root.cancel_interest(filename,conn)
         if "cancelado" in response:
-            # Remover o arquivo da lista de interesses locais
             if filename in local_interests:
                 local_interests.remove(filename)
-            # Atualizar a interface gráfica para refletir a mudança
             update_interest_window()
             messagebox.showinfo("Sucesso", f"Interesse no arquivo '{filename}' cancelado com sucesso!")
         else:
@@ -121,11 +120,10 @@ def cancel_interest(filename):
 
 
 def update_interest_window():
-    # Filtra e exibe apenas os arquivos de interesse na janela de arquivos com interesse
     files = [file for file in os.listdir("arquivos") if file in local_interests]
     
     for widget in interest_window.winfo_children():
-        widget.destroy()  # Limpa a janela antes de atualizar
+        widget.destroy()  
 
     if files:
         for idx, file in enumerate(files):
@@ -145,20 +143,18 @@ def open_new_window_file_interest():
     interest_window.geometry("550x300")
     button_for_download_archive = ctk.CTkButton(master=interest_window, text="Marcar Desinteresse", width=75, command=input_get_name_mark_disinterest)
     button_for_download_archive.place(relx=0.5, rely=0.5, anchor=CENTER)
-
     try:
-        # Filtra e exibe apenas os arquivos de interesse
-        files = [file for file in os.listdir("arquivos") if file in local_interests]
+        files = [file for file in local_interests if file in local_interests]
         if files:
             for idx, file in enumerate(files):
                 file_label = ctk.CTkLabel(interest_window, text=file)
+                notify_file_available(file)
                 file_label.pack(anchor='w')
         else:
             no_files_label = ctk.CTkLabel(interest_window, text="Nenhum arquivo marcado como interesse.")
             no_files_label.pack()
     except Exception as e:
         messagebox.showerror("Erro", f"Falha ao listar arquivos de interesse: {e}")
-      # Inicializa a janela com os arquivos de interesse
 
 
 conn = rpyc.connect("localhost", 18861, service=ClientService)
